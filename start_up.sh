@@ -1,9 +1,11 @@
 # 杀死 已经启动的后台CGI程序
 kill -9 `ps aux | grep "cgi_bin/upload.cgi" | grep -v grep | awk '{print $2}'`
+kill -9 `ps aux | grep "cgi_bin/login.cgi" | grep -v grep | awk '{print $2}'`
 
 
 #启动 必要的业务后台cgi应用程序
 spawn-fcgi -a 127.0.0.1 -p 8003 -f ./cgi_bin/upload.cgi
+spawn-fcgi -a 127.0.0.1 -p 8004 -f ./cgi_bin/login.cgi
 
 #启动MySQL服务器
 sudo service mysql restart

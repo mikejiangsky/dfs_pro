@@ -104,3 +104,50 @@ char* memstr(char* full_data, int full_data_len, char* substr)
 
     return NULL; 
 } 
+
+/**
+ * @brief  解析url query 类似 abc=123&bbb=456 字符串
+ *          传入一个key,得到相应的value
+ * @returns
+ *          0 成功, -1 失败
+ */
+int query_parse_key_value(const char *query, const char *key, char *value, int *value_len_p)
+{
+    char *temp = NULL;
+    char *end = NULL;
+    int value_len =0;
+
+
+    //找到是否有key
+    temp = strstr(query, key);
+    if (temp == NULL)
+    {
+        //LOG(UTIL_LOG_MODULE, UTIL_LOG_PROC, "Can not find key %s in query\n", key);
+
+        return -1;
+    }
+
+    temp += strlen(key);//=
+    temp++;//value
+
+
+    //get value
+    end = temp;
+
+    while ('\0' != *end && '#' != *end && '&' != *end )
+    {
+        end++;
+    }
+
+    value_len = end-temp;
+
+    strncpy(value, temp, value_len);
+    value[value_len] ='\0';
+
+    if (value_len_p != NULL)
+    {
+        *value_len_p = value_len;
+    }
+
+    return 0;
+}

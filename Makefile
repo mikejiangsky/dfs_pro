@@ -1,7 +1,7 @@
 CC=gcc
-CPPFLAGS= -I./include -I/usr/local/include/hiredis
+CPPFLAGS= -I./include -I/usr/local/include/hiredis -I/usr/include/mysql/
 CFLAGS=-Wall 
-LIBS=-lhiredis -lfcgi
+LIBS=-lhiredis -lfcgi -lm -lmysqlclient
 
 #src
 TEST_PATH=./test
@@ -15,10 +15,11 @@ test_upload=$(TEST_PATH)/test_upload  # fdfs上传文件
 test_redis=$(TEST_PATH)/test_redis    # redis客户端
 
 #cgi程序
-upload.cgi=$(CGI_BIN_PATH)/upload.cgi #upload.cgi
+upload.cgi=$(CGI_BIN_PATH)/upload.cgi 	#upload.cgi 上传
+login.cgi=$(CGI_BIN_PATH)/login.cgi 	#login.cgi  登陆
 
 
-target=$(test_log) $(test_upload) $(test_redis) $(upload.cgi)
+target=$(test_log) $(test_upload) $(test_redis) $(upload.cgi) $(login.cgi)
 
 
 ALL:$(target)
@@ -40,6 +41,10 @@ $(test_redis):$(TEST_PATH)/test_redis.o $(COMMON_PATH)/make_log.o $(COMMON_PATH)
 #cgi程序
 #upload.cgi程序
 $(upload.cgi):$(CGI_SRC_PATH)/upload_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o
+	$(CC) $^ -o $@ $(LIBS)
+	
+#login.cgi程序
+$(login.cgi):$(CGI_SRC_PATH)/login_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o
 	$(CC) $^ -o $@ $(LIBS)
 
 

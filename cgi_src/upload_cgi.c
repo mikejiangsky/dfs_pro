@@ -18,6 +18,9 @@
 #include "make_log.h" //日志头文件
 #include "util_cgi.h" //cgi后台通用接口，trim_space(), memstr()
 
+//log 模块
+#define UPLOAD_LOG_MODULE "cgi"
+#define UPLOAD_LOG_PROC   "upload"
 
 /* -------------------------------------------*/
 /**
@@ -395,6 +398,8 @@ int main()
 			{
                 goto END;
             }
+			
+			//===============> 将该文件的FastDFS路径和名称和上传者存入mysql中 <======
 
 END:
             memset(filename, 0, FILE_NAME_LEN);

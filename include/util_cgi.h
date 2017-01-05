@@ -4,13 +4,11 @@
 #define FILE_NAME_LEN       (256)	//文件名字长度
 #define TEMP_BUF_MAX_LEN    (512)	//临时缓冲区大小
 #define FILE_URL_LEN        (512)   //文件所存放storage的host_name长度
-#define HOST_NAME_LEN       (30)
+#define HOST_NAME_LEN       (30)	//主机ip地址长度
+#define USER_NAME_LEN       (128)	//用户名字长度
+#define PWD_LEN             (256)	//密码长度
 
 #define FDFS_CLIENT_CONF    "./conf/FastDFS/client/client.conf" //fastDFS client配置文件
-
-//log 模块
-#define UPLOAD_LOG_MODULE "cgi"
-#define UPLOAD_LOG_PROC   "upload"
 
 
 /**
@@ -36,6 +34,14 @@ int trim_space(char *inbuf);
  *      失败：NULL
  */
 char* memstr(char* full_data, int full_data_len, char* substr);
+
+/**
+ * @brief  解析url query 类似 abc=123&bbb=456 字符串
+ *          传入一个key,得到相应的value
+ * @returns
+ *          0 成功, -1 失败
+ */
+int query_parse_key_value(const char *query, const char *key, char *value, int *value_len_p);
 
 
 #endif
