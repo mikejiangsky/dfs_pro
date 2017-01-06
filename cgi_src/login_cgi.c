@@ -15,9 +15,15 @@
 #include "cJSON.h"
 #include "make_log.h" //日志头文件
 #include "deal_mysql.h"	//数据库, msql_conn(), MYSQL_USER, MYSQL_PWD, MYSQL_DATABASE
+#include "cfg.h" //读取配置信息
 
 #define LOGIN_LOG_MODULE "cgi"
 #define LOGIN_LOG_PROC   "login"
+
+//mysql 数据库配置信息 用户名， 密码， 数据库名称
+static char mysql_user[128] = {0};
+static char mysql_pwd[128] = {0};
+static char mysql_db[128] = {0};
 
 //返回前端登陆情况， 000代表成功， 001代表失败
 int return_login_status(char *status_num)
@@ -104,7 +110,8 @@ int check_username(char *username, char *pwd)
     int retn = 0;
 
     //connect the database
-    MYSQL *conn = msql_conn(MYSQL_USER, MYSQL_PWD, MYSQL_DATABASE);
+    //MYSQL *conn = msql_conn(MYSQL_USER, MYSQL_PWD, MYSQL_DATABASE);
+    MYSQL *conn = msql_conn(mysql_user, mysql_pwd, mysql_db);
     if (conn == NULL)
     {
         return -1;
@@ -148,9 +155,14 @@ int main(int argc, char *argv[])
     char password[PWD_LEN] = {0};		//密码
     int retn = 0;
 
+     //读取mysql数据库配置信息
+     get_pro_value(CFG_PATH, "mysql", "user", mysql_user);
+     get_pro_value(CFG_PATH, "mysql", "password", mysql_pwd);
+     get_pro_value(CFG_PATH, "mysql", "database", mysql_db);
+     LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC, "mysql:[user=%s,pwd=%s,database=%s]", mysql_user, mysql_pwd, mysql_db);
+
     while (FCGI_Accept() >= 0)
 	{
-
 		// cgi程序里，printf(), 实际上是给web服务器发送内容，不是打印到屏幕上
 		// 但是，下面这句话，不会打印到网页上，这句话的作用，指明CGI给web服务器传输的文本格式为html
 		// 如果不指明CGI给web服务器传输的文本格式，后期printf()是不能给web服务器传递信息

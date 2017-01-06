@@ -359,6 +359,9 @@ int main()
         char *contentLength = getenv("CONTENT_LENGTH");
         int len;
 
+        // cgi程序里，printf(), 实际上是给web服务器发送内容，不是打印到屏幕上
+        // 但是，下面这句话，不会打印到网页上，这句话的作用，指明CGI给web服务器传输的文本格式为html
+        // 如果不指明CGI给web服务器传输的文本格式，后期printf()是不能给web服务器传递信息
         printf("Content-type: text/html\r\n"
                 "\r\n");
 
