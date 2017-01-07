@@ -1,0 +1,48 @@
+[2017-01-07 19:31:57]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 19:31:57]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 19:31:57]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 19:31:58]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 19:31:58]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 19:31:58]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 19:31:58]--[common/cfg.c:92]--son->valuestring = 127.0.0.1
+
+[2017-01-07 19:31:58]--[common/cfg.c:92]--son->valuestring = 6379
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = 127.0.0.1
+
+[2017-01-07 19:34:59]--[common/cfg.c:92]--son->valuestring = 6379
+
+[2017-01-07 20:02:25]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 20:02:25]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 20:02:25]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 20:02:26]--[common/cfg.c:92]--son->valuestring = root
+
+[2017-01-07 20:02:26]--[common/cfg.c:92]--son->valuestring = 123456
+
+[2017-01-07 20:02:26]--[common/cfg.c:92]--son->valuestring = dfs
+
+[2017-01-07 20:02:26]--[common/cfg.c:92]--son->valuestring = 127.0.0.1
+
+[2017-01-07 20:02:26]--[common/cfg.c:92]--son->valuestring = 6379
+

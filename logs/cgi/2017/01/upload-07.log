@@ -1,0 +1,10 @@
+[2017-01-07 19:32:50]--[cgi_src/upload_cgi.c:168]--upload [20170107_182528.jpg] succ!
+[2017-01-07 19:32:50]--[cgi_src/upload_cgi.c:245]--get [group1/M00/00/00/wKgfbVhw0eKAXdi_AFvCXvVWIiI614.jpg] succ!
+
+[2017-01-07 19:32:50]--[cgi_src/upload_cgi.c:343]--file url is: http://192.168.31.109:80/group1/M00/00/00/wKgfbVhw0eKAXdi_AFvCXvVWIiI614.jpg
+
+[2017-01-07 20:07:54]--[cgi_src/upload_cgi.c:168]--upload [wx_camera_1483675192164.jpg] succ!
+[2017-01-07 20:07:54]--[cgi_src/upload_cgi.c:245]--get [group1/M00/00/00/wKgfbVhw2hqAGIT-AAcKRVO3z1E329.jpg] succ!
+
+[2017-01-07 20:07:54]--[cgi_src/upload_cgi.c:343]--file url is: http://192.168.31.109:80/group1/M00/00/00/wKgfbVhw2hqAGIT-AAcKRVO3z1E329.jpg
+

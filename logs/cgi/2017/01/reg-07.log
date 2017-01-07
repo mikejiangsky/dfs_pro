@@ -1,0 +1,18 @@
+[2017-01-07 18:56:05]--[cgi_src/reg_cgi.c:188]--[query_string=type=9&user=罗丽远&pwd=123456&flower_name=小罗罗&tel=13556662870&email=1111111@qq.com]
+
+[2017-01-07 18:56:05]--[cgi_src/reg_cgi.c:196]--[email=1111111@qq.com]
+
+[2017-01-07 18:56:05]--[cgi_src/reg_cgi.c:42]--1 rows returned 
+
+[2017-01-07 18:56:05]--[cgi_src/reg_cgi.c:56]--0 row is 13
+[2017-01-07 18:56:05]--[cgi_src/reg_cgi.c:132]--[+]get u_id succ = 13
+
+[2017-01-07 19:31:58]--[cgi_src/reg_cgi.c:73]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 19:31:58]--[cgi_src/reg_cgi.c:78]--redis:[ip=127.0.0.1,port=6379]
+
+[2017-01-07 19:34:59]--[cgi_src/reg_cgi.c:73]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 19:34:59]--[cgi_src/reg_cgi.c:78]--redis:[ip=127.0.0.1,port=6379]
+
+[2017-01-07 20:02:26]--[cgi_src/reg_cgi.c:73]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 20:02:26]--[cgi_src/reg_cgi.c:78]--redis:[ip=127.0.0.1,port=6379]
+

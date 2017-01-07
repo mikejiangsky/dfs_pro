@@ -1,0 +1,15 @@
+[2017-01-07 19:31:57]--[cgi_src/login_cgi.c:167]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 19:34:59]--[cgi_src/login_cgi.c:167]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 20:02:25]--[cgi_src/login_cgi.c:167]--mysql:[user=root,pwd=123456,database=dfs]
+[2017-01-07 20:02:47]--[cgi_src/login_cgi.c:191]--login:[user=罗丽远,pwd=123456,type=10]
+[2017-01-07 20:02:47]--[cgi_src/login_cgi.c:71]--1 rows returned 
+
+[2017-01-07 20:02:47]--[cgi_src/login_cgi.c:85]--0 row is 123456
+[2017-01-07 20:05:41]--[cgi_src/login_cgi.c:191]--login:[user=罗丽远,pwd=123456,type=10]
+[2017-01-07 20:05:41]--[cgi_src/login_cgi.c:71]--1 rows returned 
+
+[2017-01-07 20:05:41]--[cgi_src/login_cgi.c:85]--0 row is 123456
+[2017-01-07 20:07:21]--[cgi_src/login_cgi.c:191]--login:[user=mike,pwd=123456,type=10]
+[2017-01-07 20:07:21]--[cgi_src/login_cgi.c:71]--1 rows returned 
+
+[2017-01-07 20:07:21]--[cgi_src/login_cgi.c:85]--0 row is 123456
