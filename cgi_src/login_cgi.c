@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "fcgi_stdio.h"
+#include "fcgi_config.h"
 #include "util_cgi.h"//query_parse_key_value()
 #include "cJSON.h"
 #include "make_log.h" //日志头文件

@@ -1,7 +1,8 @@
 CC=gcc
 CPPFLAGS= -I./include -I/usr/local/include/hiredis -I/usr/include/mysql/
 CFLAGS=-Wall 
-LIBS=-lhiredis -lfcgi -lm -lmysqlclient
+#CFLAGS=-w
+LIBS = -lfcgi -lm -lmysqlclient -lhiredis
 
 #src
 TEST_PATH=./test
@@ -17,9 +18,10 @@ test_redis=$(TEST_PATH)/test_redis    # redis客户端
 #cgi程序
 upload.cgi=$(CGI_BIN_PATH)/upload.cgi 	#upload.cgi 上传
 login.cgi=$(CGI_BIN_PATH)/login.cgi 	#login.cgi  登陆
+reg.cgi=$(CGI_BIN_PATH)/reg.cgi 		#reg.cgi    注册
 
 
-target=$(test_log) $(test_upload) $(test_redis) $(upload.cgi) $(login.cgi)
+target=$(test_log) $(test_upload) $(test_redis) $(upload.cgi) $(login.cgi) $(reg.cgi)
 
 
 ALL:$(target)
@@ -45,6 +47,10 @@ $(upload.cgi):$(CGI_SRC_PATH)/upload_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_P
 	
 #login.cgi程序
 $(login.cgi):$(CGI_SRC_PATH)/login_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/cfg.o
+	$(CC) $^ -o $@ $(LIBS)
+	
+#reg.cgi程序
+$(reg.cgi):$(CGI_SRC_PATH)/reg_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/redis_op.o $(COMMON_PATH)/cfg.o
 	$(CC) $^ -o $@ $(LIBS)
 
 
