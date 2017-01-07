@@ -46,7 +46,7 @@ $(upload.cgi):$(CGI_SRC_PATH)/upload_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_P
 	$(CC) $^ -o $@ $(LIBS)
 	
 #login.cgi程序
-$(login.cgi):$(CGI_SRC_PATH)/login_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/cfg.o
+$(login.cgi):$(CGI_SRC_PATH)/login_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/cfg.o $(COMMON_PATH)/url_code.o
 	$(CC) $^ -o $@ $(LIBS)
 	
 #reg.cgi程序

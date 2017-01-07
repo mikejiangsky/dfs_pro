@@ -17,6 +17,7 @@
 #include "make_log.h" //日志头文件
 #include "deal_mysql.h"	//数据库, msql_conn(), MYSQL_USER, MYSQL_PWD, MYSQL_DATABASE
 #include "cfg.h" //读取配置信息
+#include "url_code.h" //url编码
 
 #define LOGIN_LOG_MODULE "cgi"
 #define LOGIN_LOG_PROC   "login"
@@ -118,6 +119,9 @@ int check_username(char *username, char *pwd)
         return -1;
     }
 
+    //设置数据库编码
+    mysql_query(conn, "set names utf8");
+
     //sql
     sprintf(sql_cmd, "select password from user where u_name=\"%s\"", username);
 
@@ -177,6 +181,7 @@ int main(int argc, char *argv[])
 
 		// 获取URL地址 "?" 后面的内容
         char *query = getenv("QUERY_STRING");
+        urldecode(query); //url解码
 
         //解析url query 类似 abc=123&bbb=456 字符串
         query_parse_key_value(query, "user", username, NULL);
