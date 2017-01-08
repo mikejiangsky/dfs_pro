@@ -471,10 +471,10 @@ int store_fileinfo_to_mysql(char *fileid, char *fdfs_file_url, char *filename, c
     -- type 文件类型： png, zip, mp4……
     -- shared_status 共享状态, 0为没有共享， 1为共享
     -- count 文件引用计数， 默认为1， 共享一次加1
-    -- pv 文件下载量，默认值为0，下载一次加1
+    -- pv 文件下载量，默认值为1，下载一次加1
     */
     sprintf(sql_cmd, "insert into %s (file_id, url, filename, createtime, user, type, shared_status, count, pv) values ('%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d)",
-        "file_info", fileid, fdfs_file_url, filename, create_time, user ,suffix, 0, 1, 0);
+        "file_info", fileid, fdfs_file_url, filename, create_time, user ,suffix, 0, 1, 1);
 
     if (mysql_query(mysql_conn, sql_cmd) != 0) //执行sql语句
     {
@@ -584,7 +584,7 @@ int bk_fileinfo_to_redis(char *fileid, char *fdfs_file_url, char *filename, char
     //FILEID_SHARED_STATUS_HASH(文件的共享状态)
     rop_hash_set(redis_conn, FILEID_SHARED_STATUS_HASH, fileid, "0");
 
-    //将文件插入到FILE_HOT_ZSET中
+    //将文件插入到FILE_HOT_ZSET中, 默认权重为1
     rop_zset_increment(redis_conn, FILE_HOT_ZSET, fileid);
 
     //获取用户id
