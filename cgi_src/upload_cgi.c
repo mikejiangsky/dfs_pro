@@ -19,6 +19,7 @@
 #include "make_log.h" //日志头文件
 #include "util_cgi.h" //cgi后台通用接口，trim_space(), memstr()
 #include "redis_keys.h"
+#include "redis_op.h"
 #include "deal_mysql.h" //mysql
 #include "cfg.h" //配置文件
 #include "url_code.h" //url转码
@@ -481,6 +482,160 @@ int store_fileinfo_to_mysql(char *fileid, char *fdfs_file_url, char *filename, c
         LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "插入失败\n");
     }
 
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "文件信息插入成功\n");
+
+    if (mysql_conn != NULL)
+    {
+        mysql_close(mysql_conn); //断开数据库连接
+    }
+
+    return retn;
+}
+
+
+
+/* -------------------------------------------*/
+/**
+ * @brief  将文件信息存储到redis数据库多个hash表形式
+ *
+ * @param fileid
+ * @param fdfs_file_url
+ * @param filename
+ * @param user
+ *
+ * @returns
+ *          0 succ, -1 fail
+ */
+/* -------------------------------------------*/
+int bk_fileinfo_to_redis(char *fileid, char *fdfs_file_url, char *filename, char *user)
+{
+    int retn = 0;
+    char sql_cmd[SQL_MAX_LEN] = {0};
+    char create_time[TIME_STRING_LEN];
+    char suffix[SUFFIX_LEN];
+    char user_id[10] = {0};
+    char file_user_list[KEY_NAME_SIZ] = {0};
+    redisContext * redis_conn = NULL;
+
+
+    MYSQL *mysql_conn = NULL; //数据库连接句柄
+
+     //连接 mysql 数据库
+    mysql_conn = msql_conn(mysql_user, mysql_pwd, mysql_db);
+    if (mysql_conn == NULL)
+    {
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "msql_conn connect err\n");
+        return -1;
+    }
+
+    //设置数据库编码
+    mysql_query(mysql_conn, "set names utf8");
+
+
+    //连接缓存数据库redis
+    redis_conn = rop_connectdb_nopwd(redis_ip, redis_port);
+    if (redis_conn == NULL)
+    {
+         LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"rop_connectdb_nopwderror!\n");
+
+        return retn;
+    }
+
+
+    //FILEID_URL_HASH
+    rop_hash_set(redis_conn, FILEID_URL_HASH, fileid, fdfs_file_url);
+    //FILEID_NAME_HASH
+    rop_hash_set(redis_conn, FILEID_NAME_HASH, fileid, filename);
+
+    //FILEID_TIME_HASH
+    //create time
+    //通过mysql数据库获取文件的创建时间
+    sprintf(sql_cmd, "select createtime from file_info where file_id=\"%s\"", fileid);
+    if (mysql_query(mysql_conn, sql_cmd) != 0)
+    {
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%s error!", sql_cmd);
+        return -1;
+    }
+    else
+    {
+        MYSQL_RES *res_set;
+        res_set = mysql_store_result(mysql_conn);/*生成结果集*/
+        if (res_set == NULL)
+        {
+            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
+            return -1;
+        }
+
+        process_result(mysql_conn, res_set, create_time);//deal_mysql.h
+
+        rop_hash_set(redis_conn, FILEID_TIME_HASH, fileid, create_time);
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "[+]get  create_time succ = %s\n", create_time);
+    }
+
+    //FILEID_USER_HASH
+    rop_hash_set(redis_conn, FILEID_USER_HASH, fileid, user);
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "   rop_hash_set(redis_conn, FILEID_USER_HASH, fileid, user) = %s\n", user);
+
+    //FILEID_TYPE_HASH
+    get_file_suffix(filename, suffix);//得到文件后缀字符串 如果非法文件后缀,返回"null"
+    rop_hash_set(redis_conn, FILEID_TYPE_HASH, fileid, suffix);
+
+
+    //FILEID_SHARED_STATUS_HASH(文件的共享状态)
+    rop_hash_set(redis_conn, FILEID_SHARED_STATUS_HASH, fileid, "0");
+
+    //将文件插入到FILE_HOT_ZSET中
+    rop_zset_increment(redis_conn, FILE_HOT_ZSET, fileid);
+
+    //获取用户id
+    //1、先从redis读取
+    //2、如果redis读取失败，说明缓冲中没有数据
+    //3、从mysql数据库获取id，如果mysql也没有，说明没有此用户
+    //4、如果mysql有此用户id，要把此id放在缓冲中
+
+     if(-1 == rop_hash_get(redis_conn, USER_USERID_HASH,  user, user_id) )
+     {
+        //通过数据库查询用户id
+        sprintf(sql_cmd, "select u_id from user where u_name=\"%s\"", user);
+        if (mysql_query(mysql_conn, sql_cmd) != 0)
+        {
+            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%s error!", sql_cmd);
+            return -1;
+        }
+        else
+        {
+            MYSQL_RES *res_set;
+            res_set = mysql_store_result(mysql_conn);/*生成结果集*/
+            if (res_set == NULL)
+            {
+                LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
+                 return -1;
+            }
+
+            if(-1 == process_result(mysql_conn, res_set, user_id) )//deal_mysql.h
+            {
+                return -1;
+            }
+            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
+
+            //如果mysql有此用户id，要把此id放在缓冲中
+            //将用户ID 和 USERNAME关系表建立
+            rop_hash_set(redis_conn, USER_USERID_HASH, user, user_id);
+            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"rop_hash_set[%s] %s %s!", USER_USERID_HASH, user, user_id);
+        }
+     }
+
+
+    //将FILEID 插入到 用户私有列表中FILE_USER_LIST
+    sprintf(file_user_list, "%s%s", FILE_USER_LIST, user_id);
+    rop_list_push(redis_conn, file_user_list, fileid);
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"rop_list_push[%s] %s!", file_user_list, fileid);
+
+    //文件引用计数+1
+    rop_hincrement_one_field(redis_conn,FILE_REFERENCE_COUNT_HASH , fileid, 1);
+
+    rop_disconnect(redis_conn);
+
     if (mysql_conn != NULL)
     {
         mysql_close(mysql_conn); //断开数据库连接
@@ -560,7 +715,14 @@ int main()
                 goto END;
             }
 
+             //===============> 将该文件的FastDFS路径和名称和上传者 备份 一份到redis中 <======
+            if (bk_fileinfo_to_redis(fileid, fdfs_file_url, filename, user) < 0)
+            {
+                goto END;
+            }
+
 END:
+            memset(user, 0, USER_NAME_LEN);
             memset(filename, 0, FILE_NAME_LEN);
             memset(fileid, 0, TEMP_BUF_MAX_LEN);
             memset(fdfs_file_url, 0, FILE_URL_LEN);

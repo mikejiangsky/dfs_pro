@@ -38,7 +38,7 @@ MYSQL* msql_conn(char *user_name, char* passwd, char *db_name);
 
 /* -------------------------------------------*/
 /**
- * @brief  处理数据库查询结构
+ * @brief  处理数据库查询结果
  *
  * @param conn	     (in)   连接数据库的句柄
  * @param res_set    (in)   数据库查询后的结果集
@@ -46,5 +46,8 @@ MYSQL* msql_conn(char *user_name, char* passwd, char *db_name);
  */
 /* -------------------------------------------*/
 void process_result_set(MYSQL *conn, MYSQL_RES *res_set);
+
+//处理数据库查询结果，结果保存在buf，只处理一条记录
+int process_result(MYSQL *conn, MYSQL_RES *res_set, char *buf);
 
 #endif

@@ -204,13 +204,13 @@ int rop_create_or_replace_hash_table(redisContext* conn,
 /**
  * @brief  给指定的hash表 指定的field对应的value自增num
  *
- * @param conn            已建立好的链接
- * @param key            hash表名
- * @param field            hash表下的区域名    
+ * @param conn			已建立好的链接
+ * @param key			hash表名
+ * @param field			hash表下的区域名
  *
- * @returns   
- *            0        succ
- *            -1        fail
+ * @returns
+ *			0		succ
+ *			-1		fail
  */
 /* -------------------------------------------*/
 int rop_hincrement_one_field(redisContext *conn, char *key, char *field, unsigned int num);

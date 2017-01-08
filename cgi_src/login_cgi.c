@@ -42,60 +42,6 @@ int return_login_status(char *status_num)
 
 /* -------------------------------------------*/
 /**
- * @brief  处理数据库查询结构
- *
- * @param conn	     (in)   连接数据库的句柄
- * @param res_set    (in)   数据库查询后的结果集
- * @param pwd	     (in)    密码
- *
- * @returns
- *      成功: 0
- *      失败：-1
- */
- /* -------------------------------------------*/
-int process_result(MYSQL *conn, MYSQL_RES *res_set, char *pwd)
-{
-    MYSQL_ROW row;
-    uint i;
-    ulong line = 0;
-
-
-    if (mysql_errno(conn) != 0)
-    {
-        LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC, "mysql_fetch_row() failed");
-        return -1;
-    }
-
-    //mysql_num_rows接受由mysql_store_result返回的结果结构集，并返回结构集中的行数
-    line = mysql_num_rows(res_set);
-    LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC, "%lu rows returned \n", line);
-    if (line == 0)
-    {
-        return -1;
-    }
-    
-    // mysql_fetch_row从结果结构中提取一行，并把它放到一个行结构中。当数据用完或发生错误时返回NULL.
-    while ((row = mysql_fetch_row(res_set)) != NULL)
-    {
-        //mysql_num_fields获取结果中列的个数
-        for (i = 0; i < mysql_num_fields(res_set); i++)
-        {
-            if (row[i] != NULL)
-             {
-                LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC, "%d row is %s", i, row[i]);
-                if (strcmp(row[i], pwd) == 0)//比较密码是否相等
-                {
-                    return 0;
-                }
-            }
-        }
-    }
-
-    return -1;
-}
-
-/* -------------------------------------------*/
-/**
  * @brief  判断用户登陆情况
  *
  * @param username 		用户名
@@ -143,7 +89,16 @@ int check_username(char *username, char *pwd)
         }
 
         //deal result
-        retn = process_result(conn, res_set, pwd);
+        char tmp[PWD_LEN];
+        process_result(conn, res_set, tmp);
+        if(strcmp(tmp, pwd) == 0)
+        {
+            retn = 0;
+        }
+        else
+        {
+            retn = -1;
+        }
     }
 
 END:
@@ -181,7 +136,7 @@ int main(int argc, char *argv[])
 
 		// 获取URL地址 "?" 后面的内容
         char *buf = getenv("QUERY_STRING");
-        char query[2048] = {0};
+        char query[BURSIZE] = {0};
         strcpy(query, buf);
         urldecode(query); //url解码
 

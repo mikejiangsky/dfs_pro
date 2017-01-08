@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "make_log.h" //日志头文件
+
+#define MYSQL_LOG_MODULE "cgi"
+#define MYSQL_LOG_PROC   "mysql"
 
 /* -------------------------------------------*/
 /**
@@ -64,7 +68,7 @@ MYSQL* msql_conn(char *user_name, char* passwd, char *db_name)
 
 /* -------------------------------------------*/
 /**
- * @brief  处理数据库查询结构
+ * @brief  处理数据库查询结果
  *
  * @param conn	     (in)   连接数据库的句柄
  * @param res_set    (in)   数据库查询后的结果集
@@ -102,4 +106,43 @@ void process_result_set(MYSQL *conn, MYSQL_RES *res_set)
 		//mysql_num_rows接受由mysql_store_result返回的结果结构集，并返回结构集中的行数 
         printf("%lu rows returned \n", (ulong)mysql_num_rows(res_set));
     }
+}
+
+//处理数据库查询结果，结果保存在buf，只处理一条记录
+int process_result(MYSQL *conn, MYSQL_RES *res_set, char *buf)
+{
+    MYSQL_ROW row;
+    uint i;
+    ulong line = 0;
+
+    if (mysql_errno(conn) != 0)
+    {
+        LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC, "mysql_fetch_row() failed");
+        return -1;
+    }
+
+    //mysql_num_rows接受由mysql_store_result返回的结果结构集，并返回结构集中的行数
+    line = mysql_num_rows(res_set);
+    LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC, "%lu rows returned \n", line);
+    if (line == 0)
+    {
+        return -1;
+    }
+
+    // mysql_fetch_row从结果结构中提取一行，并把它放到一个行结构中。当数据用完或发生错误时返回NULL.
+    while ((row = mysql_fetch_row(res_set)) != NULL)
+    {
+        //mysql_num_fields获取结果中列的个数
+        for (i = 0; i<mysql_num_fields(res_set); i++)
+        {
+            if (row[i] != NULL)
+            {
+                LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC, "%d row is %s", i, row[i]);
+                strcpy(buf, row[i]);
+                return 0;
+            }
+        }
+    }
+
+    return -1;
 }

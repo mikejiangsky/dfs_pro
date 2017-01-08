@@ -16,52 +16,13 @@
 #include "cJSON.h"      //json
 #include "deal_mysql.h" //mysql
 #include "util_cgi.h"
-#include "redis_op.h"
 #include "redis_keys.h"
+#include "redis_op.h"
 #include "cfg.h" //配置文件
 #include "url_code.h" //url转码
 
 #define REG_LOG_MODULE       "cgi"
 #define REG_LOG_PROC         "reg"
-
-//处理数据库查询结构，把用户id保存在u_id
-int process_result_get_uid(MYSQL *conn, MYSQL_RES *res_set, char *u_id)
-{
-    MYSQL_ROW row;
-    uint i;
-    ulong line = 0;
-
-    if (mysql_errno(conn) != 0)
-    {
-        LOG(REG_LOG_MODULE, REG_LOG_PROC, "mysql_fetch_row() failed");
-        return -1;
-    }
-
-    //mysql_num_rows接受由mysql_store_result返回的结果结构集，并返回结构集中的行数
-    line = mysql_num_rows(res_set);
-    LOG(REG_LOG_MODULE, REG_LOG_PROC, "%lu rows returned \n", line);
-    if (line == 0)
-    {
-        return -1;
-    }
-
-    // mysql_fetch_row从结果结构中提取一行，并把它放到一个行结构中。当数据用完或发生错误时返回NULL.
-    while ((row = mysql_fetch_row(res_set)) != NULL)
-    {
-        //mysql_num_fields获取结果中列的个数
-        for (i = 0; i<mysql_num_fields(res_set); i++)
-        {
-            if (row[i] != NULL)
-            {
-                LOG(REG_LOG_MODULE, REG_LOG_PROC, "%d row is %s", i, row[i]);
-                strcpy(u_id, row[i]);
-                return 0;
-            }
-        }
-    }
-
-    return -1;
-}
 
 //读取配置信息
 void read_cfg(char *mysql_user, char *mysql_pwd, char *mysql_db, char *redis_ip, char *redis_port)
@@ -128,14 +89,15 @@ void deal_redis(MYSQL *mysql_conn, char *user, char *user_id, char *redis_ip, ch
              return;
         }
 
-        process_result_get_uid(mysql_conn, res_set, user_id);
+        process_result(mysql_conn, res_set, user_id);
         LOG(REG_LOG_MODULE, REG_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
     }
 
      //入redis库
-    redisContext *redis_conn = rop_connectdb_nopwd(redis_ip, redis_ip);
+    redisContext *redis_conn = rop_connectdb_nopwd(redis_ip, redis_port);
     if (redis_conn == NULL)
     {
+         LOG(REG_LOG_MODULE, REG_LOG_PROC,"rop_connectdb_nopwd err!");
          return;
     }
 
@@ -150,7 +112,6 @@ void deal_redis(MYSQL *mysql_conn, char *user, char *user_id, char *redis_ip, ch
 
 }
 
-
 int main()
 {
     char user[128];
@@ -158,8 +119,8 @@ int main()
     char pwd[128];
     char tel[128];
     char email[128];
-    char *out;
     char user_id[10] = {0};
+    char *out;
 
     //mysql 数据库配置信息 用户名， 密码， 数据库名称
     char mysql_user[128] = {0};
@@ -169,6 +130,7 @@ int main()
     //redis 服务器ip、端口
     char redis_ip[30] = {0};
     char redis_port[10] = {0};
+
 
     //读取配置信息
     read_cfg(mysql_user, mysql_pwd, mysql_db, redis_ip, redis_port);
