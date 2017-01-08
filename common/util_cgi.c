@@ -151,3 +151,55 @@ int query_parse_key_value(const char *query, const char *key, char *value, int *
 
     return 0;
 }
+
+//通过文件名file_name， 得到文件后缀字符串, 保存在suffix 如果非法文件后缀,返回"null"
+int get_file_suffix(const char *file_name, char *suffix)
+{
+    const char *p = file_name;
+    int len = 0;
+    const char *q=NULL;
+    const char *k= NULL;
+
+    if (p == NULL)
+    {
+        return -1;
+    }
+
+    q = p;
+
+    //mike.doc.png
+    //             ↑
+
+    while (*q != '\0')
+    {
+        q++;
+    }
+
+    k = q;
+    while (*k != '.' && k != p)
+    {
+        k--;
+    }
+
+    if (*k == '.')
+    {
+        k++;
+        len = q - k;
+
+        if (len != 0)
+        {
+            strncpy(suffix, k, len);
+            suffix[len] = '\0';
+        }
+        else
+        {
+            strncpy(suffix, "null", 5);
+        }
+    }
+    else
+    {
+        strncpy(suffix, "null", 5);
+    }
+
+    return 0;
+}

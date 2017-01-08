@@ -180,7 +180,9 @@ int main(int argc, char *argv[])
         memset(login_type, 0, 10);
 
 		// 获取URL地址 "?" 后面的内容
-        char *query = getenv("QUERY_STRING");
+        char *buf = getenv("QUERY_STRING");
+        char query[2048] = {0};
+        strcpy(query, buf);
         urldecode(query); //url解码
 
         //解析url query 类似 abc=123&bbb=456 字符串

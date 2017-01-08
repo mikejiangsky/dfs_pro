@@ -2,10 +2,11 @@
 /**添加设置cookie**/  
 function addCookie(name,value,days,path)
 {   
-
 	//escape() 函数可对字符串进行编码，这样就可以在所有的计算机上读取该字符串
-    var name = escape(name);  
-    var value = escape(value);  
+    //var name = escape(name);  
+    //var value = escape(value);  
+	var name = encodeURI(name);  
+    var value = encodeURI(value);  
 
     var expires = new Date();  
     expires.setTime(expires.getTime() + days * 3600000 * 24);  
@@ -18,12 +19,14 @@ function addCookie(name,value,days,path)
     document.cookie = name + "=" + value + _expires + path;  
 }  
 
-
 /**获取cookie的值，根据cookie的键获取值**/  
 function getCookieValue(name)
 {  
     //用处理字符串的方式查找到key对应value  
-    var name = escape(name);  
+    //var name = escape(name);  
+	var name = encodeURI(name); 
+	
+	
     //读cookie属性，这将返回文档的所有cookie  
     var allcookies = document.cookie;         
     //查找名为name的cookie的开始位置  
@@ -35,7 +38,8 @@ function getCookieValue(name)
         var end = allcookies.indexOf(";",start);        //从cookie值开始的位置起搜索第一个";"的位置,即cookie值结尾的位置  
         if (end == -1) end = allcookies.length;        //如果end值为-1说明cookie列表里只有一个cookie  
         var value = allcookies.substring(start,end); //提取cookie的值  
-        return (value);                           //对它解码        
+        //return decodeURI(value);                           //对它解码  
+		return value;
     }else{  //搜索失败，返回空字符串  
         return "";  
     }  

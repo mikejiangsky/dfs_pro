@@ -7,6 +7,8 @@
 #define HOST_NAME_LEN       (30)	//主机ip地址长度
 #define USER_NAME_LEN       (128)	//用户名字长度
 #define PWD_LEN             (256)	//密码长度
+#define TIME_STRING_LEN     (25)    //时间戳长度
+#define SUFFIX_LEN          (8)     //后缀名长度
 
 #define FDFS_CLIENT_CONF    "./conf/FastDFS/client/client.conf" //fastDFS client配置文件
 
@@ -43,5 +45,7 @@ char* memstr(char* full_data, int full_data_len, char* substr);
  */
 int query_parse_key_value(const char *query, const char *key, char *value, int *value_len_p);
 
+//通过文件名file_name， 得到文件后缀字符串, 保存在suffix 如果非法文件后缀,返回"null"
+int get_file_suffix(const char *file_name, char *suffix);
 
 #endif

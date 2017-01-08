@@ -1,6 +1,6 @@
 /**
  * @file 	upload_cgi.c
- * @brief   上传文件后台CGI程序 
+ * @brief   上传文件后台CGI程序
  * @author 	mike
  * @version 1.0
  * @date
@@ -14,13 +14,75 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <time.h>
 #include "fcgi_stdio.h"
 #include "make_log.h" //日志头文件
 #include "util_cgi.h" //cgi后台通用接口，trim_space(), memstr()
+#include "redis_keys.h"
+#include "deal_mysql.h" //mysql
+#include "cfg.h" //配置文件
+#include "url_code.h" //url转码
 
 //log 模块
 #define UPLOAD_LOG_MODULE "cgi"
 #define UPLOAD_LOG_PROC   "upload"
+
+//mysql 数据库配置信息 用户名， 密码， 数据库名称
+static char mysql_user[128] = {0};
+static char mysql_pwd[128] = {0};
+static char mysql_db[128] = {0};
+
+//redis 服务器ip、端口
+static char redis_ip[30] = {0};
+static char redis_port[10] = {0};
+
+//读取配置信息
+void read_cfg()
+{
+     //读取mysql数据库配置信息
+    get_pro_value(CFG_PATH, "mysql", "user", mysql_user);
+    get_pro_value(CFG_PATH, "mysql", "password", mysql_pwd);
+    get_pro_value(CFG_PATH, "mysql", "database", mysql_db);
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "mysql:[user=%s,pwd=%s,database=%s]", mysql_user, mysql_pwd, mysql_db);
+
+    //读取redis配置信息
+    get_pro_value(CFG_PATH, "redis", "ip", redis_ip);
+    get_pro_value(CFG_PATH, "redis", "port", redis_port);
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "redis:[ip=%s,port=%s]\n", redis_ip, redis_port);
+}
+
+/* -------------------------------------------*/
+/**
+ * @brief  得到上传文件所属用户的用户名
+ * @return 0 -succ
+ *         -1 fail
+ */
+/* -------------------------------------------*/
+int get_username(char *user)
+{
+    // 获取URL地址 "?" 后面的内容
+    char *buf = getenv("QUERY_STRING");
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "query_string111 = [%s]", buf);
+    char query_string[2048] = {0};
+    strcpy(query_string, buf);
+    urldecode(query_string); //url解码
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "query_string2222 = [%s]", query_string);
+
+
+    //得到用户名
+    query_parse_key_value(query_string, "user", user, NULL);
+    if (strlen(user) == 0)
+    {
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get user has no value!!", user);
+        return -1;
+    }
+    else
+    {
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get user = [%s]", user);
+    }
+
+    return 0;
+}
 
 /* -------------------------------------------*/
 /**
@@ -30,7 +92,7 @@
  * @param len       (in)    post数据的长度
  * @param file_name (out)   文件的文件名
  *
- * @returns   
+ * @returns
  *          0 succ, -1 fail
  */
 /* -------------------------------------------*/
@@ -48,18 +110,18 @@ int recv_save_file(int len, char *filename)
 
     //==========> 开辟存放文件的 内存 <===========
     file_buf = (char *)malloc(len);
-    if (file_buf == NULL) 
-	{
+    if (file_buf == NULL)
+    {
         printf("malloc error! file size is to big!!!!\n");
         return -1;
     }
 
     begin = file_buf;
     p = begin;
-    for (i = 0; i < len; i++) 
-	{
-        if ((ch = getchar()) < 0) 
-		{
+    for (i = 0; i < len; i++)
+    {
+        if ((ch = getchar()) < 0)
+        {
             printf("Error: Not enough bytes received on standard input<p>\n");
             retn = -1;
             goto END;
@@ -76,14 +138,14 @@ int recv_save_file(int len, char *filename)
 
     //get boundary 得到分界线
     p = strstr(begin, "\r\n");
-    if (p == NULL) 
-	{
+    if (p == NULL)
+    {
         printf("wrong no boundary!\n");
         retn = -1;
         goto END;
     }
 
-	//拷贝分界线
+    //拷贝分界线
     strncpy(boundary, begin, p-begin);
     boundary[p-begin] = '\0';	//字符串结束符
     //printf("boundary: [%s]\n", boundary);
@@ -96,8 +158,8 @@ int recv_save_file(int len, char *filename)
     begin = p;
 
     p = strstr(begin, "\r\n");
-    if(p == NULL) 
-	{
+    if(p == NULL)
+    {
         printf("ERROR: get context text error, no filename?\n");
         retn = -1;
         goto END;
@@ -114,7 +176,7 @@ int recv_save_file(int len, char *filename)
     //           ↑
     q = begin;
     q = strstr(begin, "filename=");
-    
+
     q += strlen("filename=");
     q++;	//跳过第一个"
 
@@ -122,27 +184,27 @@ int recv_save_file(int len, char *filename)
     strncpy(filename, q, k-q);	//拷贝文件名
     filename[k-q] = '\0';
 
-	//去掉一个字符串两边的空白字符
+    //去掉一个字符串两边的空白字符
     trim_space(filename);	//util_cgi.h
     //printf("filename: [%s]\n", filename);
 
     //get file
-    begin = p;     
+    begin = p;
     p = strstr(begin, "\r\n");
     p += 4;//\r\n\r\n
     len -= (p-begin);
 
-	//下面才是文件的真正内容
+    //下面才是文件的真正内容
     begin = p;
     // now begin -->file's begin
     //find file's end
     p = memstr(begin, len, boundary);//util_cgi.h
     if (p == NULL)
-	{
+    {
         p = end-2;    //\r\n
     }
-    else 
-	{
+    else
+    {
         p = p -2;//\r\n
     }
 
@@ -153,20 +215,20 @@ int recv_save_file(int len, char *filename)
 
     int fd = 0;
     fd = open(filename, O_CREAT|O_WRONLY, 0644);
-    if (fd < 0) 
-	{
+    if (fd < 0)
+    {
         printf("open %s error\n", filename);
         retn = -1;
         goto END;
     }
 
-	//ftruncate会将参数fd指定的文件大小改为参数length指定的大小
+    //ftruncate会将参数fd指定的文件大小改为参数length指定的大小
     ftruncate(fd, (p-begin));
     write(fd, begin, (p-begin));
     close(fd);
 
     LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "upload [%s] succ!", filename);
-	printf("upload [%s] succ!\r\n", filename);
+    printf("upload [%s] succ!\r\n", filename);
 
 END:
     free(file_buf);
@@ -180,7 +242,7 @@ END:
  * @param filename  (in) 本地文件的路径
  * @param fileid    (out)得到上传之后的文件ID路径
  *
- * @returns   
+ * @returns
  *      0 succ, -1 fail
  */
 /* -------------------------------------------*/
@@ -190,66 +252,66 @@ int upload_to_dstorage(char *filename, char *fileid)
 
     pid_t pid;
     int fd[2];
-	
-	//无名管道的创建
-    if (pipe(fd) < 0) 
-	{
+
+    //无名管道的创建
+    if (pipe(fd) < 0)
+    {
         printf("pip error\n");
-		retn = -1;
-		goto END;
+        retn = -1;
+        goto END;
     }
 
-	//创建进程
+    //创建进程
     pid = fork();
     if (pid < 0)//进程创建失败
-	{
+    {
         printf("fork error\n");
-		retn = -1;
-		goto END;
+        retn = -1;
+        goto END;
     }
-	
-	if(pid == 0) //子进程
-	{
-		//关闭读端
-		close(fd[0]);
-		
-		//将标准输出 重定向 写管道
-		dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
-		
-		//通过execlp执行fdfs_upload_file
-		execlp("fdfs_upload_file", "fdfs_upload_file", FDFS_CLIENT_CONF, filename, NULL);
-		
-		//执行失败
-		LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_upload_file error\n");
-		
+
+    if(pid == 0) //子进程
+    {
+        //关闭读端
+        close(fd[0]);
+
+        //将标准输出 重定向 写管道
+        dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
+
+        //通过execlp执行fdfs_upload_file
+        execlp("fdfs_upload_file", "fdfs_upload_file", FDFS_CLIENT_CONF, filename, NULL);
+
+        //执行失败
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_upload_file error\n");
+
         close(fd[1]);
-	}
-	else //父进程
-	{
-		//关闭写端
-		close(fd[1]);
-		
-		//从管道中去读数据
-		read(fd[0], fileid, TEMP_BUF_MAX_LEN);
-		
-		//去掉一个字符串两边的空白字符
-		trim_space(fileid);
-		
-		if (strlen(fileid) == 0) 
-		{
-			LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[upload FAILED!]\n");
-			retn = -1;
-			goto END;
-		}
-	
-		LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get [%s] succ!\n", fileid);
-		
-		wait(NULL);	//等待子进程结束，回收其资源
-		close(fd[0]);
-	}
+    }
+    else //父进程
+    {
+        //关闭写端
+        close(fd[1]);
+
+        //从管道中去读数据
+        read(fd[0], fileid, TEMP_BUF_MAX_LEN);
+
+        //去掉一个字符串两边的空白字符
+        trim_space(fileid);
+
+        if (strlen(fileid) == 0)
+        {
+            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[upload FAILED!]\n");
+            retn = -1;
+            goto END;
+        }
+
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get [%s] succ!\n", fileid);
+
+        wait(NULL);	//等待子进程结束，回收其资源
+        close(fd[0]);
+    }
 
 END:
-	return retn;
+    return retn;
 }
 
 /* -------------------------------------------*/
@@ -259,7 +321,7 @@ END:
  * @param fileid        (in)    文件分布式id路径
  * @param fdfs_file_url (out)   文件的完整url地址
  *
- * @returns   
+ * @returns
  *      0 succ, -1 fail
  */
 /* -------------------------------------------*/
@@ -276,141 +338,225 @@ int make_file_url(char *fileid, char *fdfs_file_url)
 
     pid_t pid;
     int fd[2];
-	
-	//无名管道的创建
-    if (pipe(fd) < 0) 
-	{
+
+    //无名管道的创建
+    if (pipe(fd) < 0)
+    {
         printf("pip error\n");
-		retn = -1;
-		goto END;
+        retn = -1;
+        goto END;
     }
 
-	//创建进程
+    //创建进程
     pid = fork();
     if (pid < 0)//进程创建失败
-	{
+    {
         printf("fork error\n");
-		retn = -1;
-		goto END;
+        retn = -1;
+        goto END;
     }
-	
-	if(pid == 0) //子进程
-	{
-		//关闭读端
-		close(fd[0]);
-		
-		//将标准输出 重定向 写管道
-		dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
-		
-		execlp("fdfs_file_info", "fdfs_file_info", FDFS_CLIENT_CONF, fileid, NULL);
-		
-		//执行失败
-		LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_file_info error\n");
-		
+
+    if(pid == 0) //子进程
+    {
+        //关闭读端
+        close(fd[0]);
+
+        //将标准输出 重定向 写管道
+        dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
+
+        execlp("fdfs_file_info", "fdfs_file_info", FDFS_CLIENT_CONF, fileid, NULL);
+
+        //执行失败
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_file_info error\n");
+
         close(fd[1]);
-	}
-	else //父进程
-	{
-		//关闭写端
-		close(fd[1]);
-		
-		//从管道中去读数据
-		read(fd[0], fdfs_file_stat_buf, TEMP_BUF_MAX_LEN);
-		//LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get file_ip [%s] succ\n", fdfs_file_stat_buf);
-		
-		wait(NULL);	//等待子进程结束，回收其资源
-		close(fd[0]);
-		
-		//拼接上传文件的完整url地址--->http://host_name/group1/M00/00/00/D12313123232312.png
-		p = strstr(fdfs_file_stat_buf, "source ip address: ");
-		
-		q = p + strlen("source ip address: ");
-		k = strstr(q, "\n");
-		
-		strncpy(fdfs_file_host_name, q, k-q);
-		fdfs_file_host_name[k-q] = '\0';
+    }
+    else //父进程
+    {
+        //关闭写端
+        close(fd[1]);
 
-		//printf("host_name:[%s]\n", fdfs_file_host_name);
+        //从管道中去读数据
+        read(fd[0], fdfs_file_stat_buf, TEMP_BUF_MAX_LEN);
+        //LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "get file_ip [%s] succ\n", fdfs_file_stat_buf);
 
-		strcat(fdfs_file_url, "http://");
-		strcat(fdfs_file_url, fdfs_file_host_name);
-		strcat(fdfs_file_url, ":");
-		strcat(fdfs_file_url, "80");
-		strcat(fdfs_file_url, "/");
-		strcat(fdfs_file_url, fileid);
+        wait(NULL);	//等待子进程结束，回收其资源
+        close(fd[0]);
 
-		printf("[%s]\n", fdfs_file_url);
-		LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "file url is: %s\n", fdfs_file_url);
-	}
+        //拼接上传文件的完整url地址--->http://host_name/group1/M00/00/00/D12313123232312.png
+        p = strstr(fdfs_file_stat_buf, "source ip address: ");
+
+        q = p + strlen("source ip address: ");
+        k = strstr(q, "\n");
+
+        strncpy(fdfs_file_host_name, q, k-q);
+        fdfs_file_host_name[k-q] = '\0';
+
+        //printf("host_name:[%s]\n", fdfs_file_host_name);
+
+        strcat(fdfs_file_url, "http://");
+        strcat(fdfs_file_url, fdfs_file_host_name);
+        strcat(fdfs_file_url, ":");
+        strcat(fdfs_file_url, "80");
+        strcat(fdfs_file_url, "/");
+        strcat(fdfs_file_url, fileid);
+
+        printf("[%s]\n", fdfs_file_url);
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "file url is: %s\n", fdfs_file_url);
+    }
 
 END:
-	return retn;
+    return retn;
+}
+
+/* -------------------------------------------*/
+/**
+ * @brief  将该文件的FastDFS路径、名称、上传者存入mysql中
+ *
+ * @param fileid
+ * @param fdfs_file_url
+ * @param filename
+ * @param user
+ *
+ * @returns
+ *          0 succ, -1 fail
+ */
+/* -------------------------------------------*/
+int store_fileinfo_to_mysql(char *fileid, char *fdfs_file_url, char *filename, char *user)
+{
+    int retn = 0;
+    MYSQL *mysql_conn = NULL; //数据库连接句柄
+
+    time_t now;;
+    char create_time[TIME_STRING_LEN];
+    char suffix[SUFFIX_LEN];
+    char sql_cmd[SQL_MAX_LEN] = {0};
+
+    //连接 mysql 数据库
+    mysql_conn = msql_conn(mysql_user, mysql_pwd, mysql_db);
+    if (mysql_conn == NULL)
+    {
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "msql_conn connect err\n");
+        return -1;
+    }
+
+    //设置数据库编码
+    mysql_query(mysql_conn, "set names utf8");
+
+    //获取当前时间
+    now = time(NULL);
+    strftime(create_time, TIME_STRING_LEN-1, "%Y-%m-%d %H:%M:%S", localtime(&now));
+
+    //得到文件后缀字符串 如果非法文件后缀,返回"null"
+    get_file_suffix(filename, suffix);
+
+    //sql 语句
+    /*
+    -- file_id 文件id
+    -- url 文件url
+    -- filename 文件名字
+    -- createtime 文件创建时间
+    -- user	文件所属用户
+    -- type 文件类型： png, zip, mp4……
+    -- shared_status 共享状态, 0为没有共享， 1为共享
+    -- count 文件引用计数， 默认为1， 共享一次加1
+    -- pv 文件下载量，默认值为0，下载一次加1
+    */
+    sprintf(sql_cmd, "insert into %s (file_id, url, filename, createtime, user, type, shared_status, count, pv) values ('%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d)",
+        "file_info", fileid, fdfs_file_url, filename, create_time, user ,suffix, 0, 1, 0);
+
+    if (mysql_query(mysql_conn, sql_cmd) != 0) //执行sql语句
+    {
+        print_error(mysql_conn, "插入失败");
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "插入失败\n");
+    }
+
+    if (mysql_conn != NULL)
+    {
+        mysql_close(mysql_conn); //断开数据库连接
+    }
+
+    return retn;
 }
 
 
 int main()
 {
+    char user[USER_NAME_LEN] = {0};         //当前登陆用户
     char filename[FILE_NAME_LEN] = {0};		//上传文件的名字
-	char fileid[TEMP_BUF_MAX_LEN] = {0};	//文件上传到fastDFS后的文件id
-	char fdfs_file_url[FILE_URL_LEN] = {0};	//文件所存放storage的host_name
+    char fileid[TEMP_BUF_MAX_LEN] = {0};	//文件上传到fastDFS后的文件id
+    char fdfs_file_url[FILE_URL_LEN] = {0};	//文件所存放storage的host_name
 
-    while (FCGI_Accept() >= 0) 
-	{
-        char *contentLength = getenv("CONTENT_LENGTH");
-        int len;
+    //读取配置信息
+    read_cfg();
 
+    while (FCGI_Accept() >= 0)
+    {
         // cgi程序里，printf(), 实际上是给web服务器发送内容，不是打印到屏幕上
         // 但是，下面这句话，不会打印到网页上，这句话的作用，指明CGI给web服务器传输的文本格式为html
         // 如果不指明CGI给web服务器传输的文本格式，后期printf()是不能给web服务器传递信息
         printf("Content-type: text/html\r\n"
                 "\r\n");
 
+        //得到上传文件所属用户的用户名
+        if (get_username(user) < 0)
+        {
+            break;
+        }
 
-        if (contentLength != NULL) 
-		{
+        char *contentLength = getenv("CONTENT_LENGTH");
+        int len;
+
+
+        if (contentLength != NULL)
+        {
             len = strtol(contentLength, NULL, 10);
         }
-        else 
-		{
+        else
+        {
             len = 0;
         }
 
-        if (len <= 0) 
-		{
+        if (len <= 0)
+        {
             printf("No data from standard input\n");
         }
-        else 
-		{
+        else
+        {
             //===============> 得到上传文件  <============
-            if (recv_save_file(len, filename) < 0) 
-			{
+            if (recv_save_file(len, filename) < 0)
+            {
                 goto END;
             }
-			
-			 //===============> 将该文件存入fastDFS中,并得到文件的file_id <============
-            if (upload_to_dstorage(filename, fileid) < 0) 
-			{
+
+             //===============> 将该文件存入fastDFS中,并得到文件的file_id <============
+            if (upload_to_dstorage(filename, fileid) < 0)
+            {
                 goto END;
             }
-			
-			//================> 删除本地临时存放的上传文件 <===============
+
+            //================> 删除本地临时存放的上传文件 <===============
             unlink(filename);
-			
-			//================> 得到文件所存放storage的host_name <=================
-            if (make_file_url(fileid, fdfs_file_url) < 0) 
-			{
+
+            //================> 得到文件所存放storage的host_name <=================
+            if (make_file_url(fileid, fdfs_file_url) < 0)
+            {
                 goto END;
             }
-			
-			//===============> 将该文件的FastDFS路径和名称和上传者存入mysql中 <======
+
+            //===============> 将该文件的FastDFS路径和名称和上传者存入mysql中 <======
+            if (store_fileinfo_to_mysql(fileid, fdfs_file_url, filename, user) < 0)
+            {
+                goto END;
+            }
 
 END:
             memset(filename, 0, FILE_NAME_LEN);
-			memset(fileid, 0, TEMP_BUF_MAX_LEN);
-			memset(fdfs_file_url, 0, FILE_URL_LEN);
+            memset(fileid, 0, TEMP_BUF_MAX_LEN);
+            memset(fdfs_file_url, 0, FILE_URL_LEN);
 
         }
-		
+
     } /* while */
 
     return 0;

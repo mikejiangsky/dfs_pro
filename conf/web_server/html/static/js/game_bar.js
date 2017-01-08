@@ -667,7 +667,7 @@ function bindEvent() {
     });
 
     Zepto("#attention").on(CLICKEVENT, function(e) { //"关注"超链接
-        location.href="http://mp.weixin.qq.com/s?__biz=MzI0NjM3NjI1NQ==&mid=2247484325&idx=2&sn=d5ab0cf8348275265eb285bc7c1934fa&chksm=e94171f5de36f8e3415e3b8532444dae2e93c6160e0f2957c9a96e97218390cb5914735163d4#rd;"
+        location.href="http://mp.weixin.qq.com/s?__biz=MzI0NjM3NjI1NQ==&mid=2247484325&idx=2&sn=d5ab0cf8348275265eb285bc7c1934fa&chksm=e94171f5de36f8e3415e3b8532444dae2e93c6160e0f2957c9a96e97218390cb5914735163d4#rd"
     });
 
     Zepto('#out_layer').on(CLICKEVENT, function(e){ //布局

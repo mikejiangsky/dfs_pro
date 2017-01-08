@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<meta charset="UTF-8">
+		<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 		<title>传智云盘上传文件</title>
 		
 		<script type="text/javascript" src="zyupload/jquery-1.7.2.js"></script>
@@ -26,13 +27,13 @@
 					itemHeight       :   "115px",                 // 文件项的高度
 					//url中带当前登陆用户的信息
 					url              :   "/upload/UploadAction?user="+getCookieValue("username"),  // 上传文件的路径
-					fileType         :   ["jpg","png","js","css","bmp", "rar", "tar", "txt", "zip", "mp4", "mp3", "avi", "gif","docx", "doc", "pdf", "gz", "tar"],// 上传文件的类型
+					fileType         :   ["jpg", "JPG", "png", "PNG", "js","css","bmp", "rar", "tar", "txt", "zip", "mp4", "mp3", "avi", "gif","docx", "doc", "pdf", "gz", "tar"],// 上传文件的类型
 					fileSize         :   51200000,                // 上传文件的大小
 					multiple         :   true,                    // 是否可以多个文件上传
 					dragDrop         :   true,                    // 是否可以拖动上传文件
 					tailor           :   true,                    // 是否可以裁剪图片
 					del              :   true,                    // 是否可以删除文件
-					finishDel        :   false,  				  // 是否在上传文件完成后删除预览
+					finishDel        :   true,  				  // 是否在上传文件完成后删除预览
 					/* 外部获得的回调接口 */
 					onSelect: function(selectFiles, allFiles){    // 选择文件的回调方法  selectFile:当前选中的文件  allFiles:还没上传的全部文件
 						console.info("当前选择了以下文件：");
