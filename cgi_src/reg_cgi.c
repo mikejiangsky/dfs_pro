@@ -184,7 +184,7 @@ int main()
 
          // 获取URL地址 "?" 后面的内容
         char *buf = getenv("QUERY_STRING");
-        char query_string[2048] = {0};
+        char query_string[BURSIZE] = {0};
         strcpy(query_string, buf);
         urldecode(query_string); //url解码
         LOG(REG_LOG_MODULE, REG_LOG_PROC, "[query_string=%s]\n", query_string);

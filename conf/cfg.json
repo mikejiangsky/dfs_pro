@@ -18,5 +18,18 @@
 	"dfs_path":
 	{
 		"client": "./conf/FastDFS/client/client.conf"
+	},
+	
+	"web_server":
+	{
+		"ip": "192.168.31.109",
+		"port": "80"
+	},
+	
+	"storage_web_server":
+	{
+		"ip": "192.168.31.109",
+		"port": "80"
 	}
+	
 }

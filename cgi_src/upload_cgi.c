@@ -62,11 +62,10 @@ int get_username(char *user)
 {
     // 获取URL地址 "?" 后面的内容
     char *buf = getenv("QUERY_STRING");
-    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "query_string111 = [%s]", buf);
-    char query_string[2048] = {0};
+    char query_string[BURSIZE] = {0};
     strcpy(query_string, buf);
     urldecode(query_string); //url解码
-    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "query_string2222 = [%s]", query_string);
+    LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "query_string = [%s]", query_string);
 
 
     //得到用户名
@@ -278,8 +277,12 @@ int upload_to_dstorage(char *filename, char *fileid)
         //将标准输出 重定向 写管道
         dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
 
+        //读取fdfs client 配置文件的路径
+        char fdfs_cli_conf_path[256] = {0};
+        get_pro_value(CFG_PATH, "dfs_path", "client", fdfs_cli_conf_path);
+
         //通过execlp执行fdfs_upload_file
-        execlp("fdfs_upload_file", "fdfs_upload_file", FDFS_CLIENT_CONF, filename, NULL);
+        execlp("fdfs_upload_file", "fdfs_upload_file", fdfs_cli_conf_path, filename, NULL);
 
         //执行失败
         LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_upload_file error\n");
@@ -364,7 +367,11 @@ int make_file_url(char *fileid, char *fdfs_file_url)
         //将标准输出 重定向 写管道
         dup2(fd[1], STDOUT_FILENO); //dup2(fd[1], 1);
 
-        execlp("fdfs_file_info", "fdfs_file_info", FDFS_CLIENT_CONF, fileid, NULL);
+        //读取fdfs client 配置文件的路径
+        char fdfs_cli_conf_path[256] = {0};
+        get_pro_value(CFG_PATH, "dfs_path", "client", fdfs_cli_conf_path);
+
+        execlp("fdfs_file_info", "fdfs_file_info", fdfs_cli_conf_path, fileid, NULL);
 
         //执行失败
         LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "execlp fdfs_file_info error\n");
@@ -394,10 +401,13 @@ int make_file_url(char *fileid, char *fdfs_file_url)
 
         //printf("host_name:[%s]\n", fdfs_file_host_name);
 
+        //读取storage_web_server服务器的端口
+        char storage_web_server_port[20] = {0};
+        get_pro_value(CFG_PATH, "storage_web_server", "port", storage_web_server_port);
         strcat(fdfs_file_url, "http://");
         strcat(fdfs_file_url, fdfs_file_host_name);
         strcat(fdfs_file_url, ":");
-        strcat(fdfs_file_url, "80");
+        strcat(fdfs_file_url, storage_web_server_port);
         strcat(fdfs_file_url, "/");
         strcat(fdfs_file_url, fileid);
 
