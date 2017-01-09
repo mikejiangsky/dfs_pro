@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include "fcgi_config.h"
 #include "fcgi_stdio.h"
 #include "make_log.h" //日志头文件
 #include "util_cgi.h" //cgi后台通用接口，trim_space(), memstr()

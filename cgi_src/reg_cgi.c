@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "fcgi_config.h"
 #include "fcgi_stdio.h" //FCGI_Accept()
 #include "cJSON.h"      //json
 #include "deal_mysql.h" //mysql

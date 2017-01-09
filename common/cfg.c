@@ -51,7 +51,7 @@ int get_pro_value(const char *profile, char *title, char *key, char *value)
     fseek(fp, 0, SEEK_SET);//光标移动到开头
 
 
-    char *buf = (char *)calloc(1, size); //动态分配空间
+    char *buf = (char *)calloc(1, size+1); //动态分配空间
     if(buf == NULL)
     {
         perror("calloc");
