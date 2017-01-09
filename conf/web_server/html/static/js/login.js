@@ -37,9 +37,9 @@ function getCookieValue(name)
         var start = pos + name.length;                  //cookie值开始的位置  
         var end = allcookies.indexOf(";",start);        //从cookie值开始的位置起搜索第一个";"的位置,即cookie值结尾的位置  
         if (end == -1) end = allcookies.length;        //如果end值为-1说明cookie列表里只有一个cookie  
-        var value = allcookies.substring(start,end); //提取cookie的值  
-        //return decodeURI(value);                           //对它解码  
-		return value;
+        var value = allcookies.substring(start,end); 	//提取cookie的值  
+        return decodeURI(value);                        //对它解码  
+		//return value;
     }else{  //搜索失败，返回空字符串  
         return "";  
     }  

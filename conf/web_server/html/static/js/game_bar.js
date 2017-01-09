@@ -623,7 +623,7 @@ function checkPC() {
 }
 
 function bindEvent() {
-    Zepto("#menu_game_new").on(CLICKEVENT, function(e) {//点击"最近文件"
+    Zepto("#menu_game_new").on(CLICKEVENT, function(e) {//点击"最新文件"
         selected_action('newFile');
     });
 

@@ -12,6 +12,9 @@ spawn-fcgi -a 127.0.0.1 -p 8005 -f ./cgi_bin/reg.cgi
 #启动MySQL服务器
 sudo service mysql restart
 
+# 杀死 已经启动的后台redis服务器
+kill -9 `ps aux | grep "redis-server" | grep -v grep | awk '{print $2}'`
+
 #启动redis服务器
 redis-server ./conf/redis/redis.conf
 
