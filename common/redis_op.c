@@ -978,10 +978,10 @@ int rop_range_list(redisContext *conn, char *key, int from_pos, int end_pos, RVA
     int count = end_pos - from_pos + 1;
 
     reply = redisCommand(conn, "LRANGE %s %d %d", key, from_pos, end_pos);
-//    rop_test_reply_type(reply);
-	if (reply->type != REDIS_REPLY_ARRAY) {
+    if (reply->type != REDIS_REPLY_ARRAY || reply->elements == 0) {
 		LOG(REDIS_LOG_MODULE, REDIS_LOG_PROC, "[-][GMS_REDIS]LRANGE %s  error!%s\n", key, conn->errstr);
 		retn = -1;
+        goto END;
 	}
 
 
@@ -993,7 +993,12 @@ int rop_range_list(redisContext *conn, char *key, int from_pos, int end_pos, RVA
         strncpy(values[i], reply->element[i]->str, VALUES_ID_SIZE-1);
     }
 
-	freeReplyObject(reply);
+END:
+    if(reply != NULL)
+    {
+        freeReplyObject(reply);
+    }
+
 	return retn;
 }
 

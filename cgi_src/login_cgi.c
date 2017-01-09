@@ -71,37 +71,19 @@ int check_username(char *username, char *pwd)
     //sql
     sprintf(sql_cmd, "select password from user where u_name=\"%s\"", username);
 
-    if (mysql_query(conn, sql_cmd) != 0) //fail
+
+    //deal result
+    char tmp[PWD_LEN];
+    process_result_one(conn, sql_cmd, tmp);
+    if(strcmp(tmp, pwd) == 0)
     {
-        LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC,"[-]%s error!", sql_cmd);
-        retn = -1;
-        goto END;
+        retn = 0;
     }
     else
     {
-        MYSQL_RES *res_set;
-        res_set = mysql_store_result(conn);/*生成结果集*/
-        if (res_set == NULL)
-        {
-            LOG(LOGIN_LOG_MODULE, LOGIN_LOG_PROC,"mysql_store_result error!", sql_cmd);
-            retn = -1;
-            goto END;
-        }
-
-        //deal result
-        char tmp[PWD_LEN];
-        process_result(conn, res_set, tmp);
-        if(strcmp(tmp, pwd) == 0)
-        {
-            retn = 0;
-        }
-        else
-        {
-            retn = -1;
-        }
+        retn = -1;
     }
 
-END:
     mysql_close(conn);
 
     return retn;

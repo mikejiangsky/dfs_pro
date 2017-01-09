@@ -6,7 +6,7 @@
 #include <string.h>
 #include "make_log.h" //日志头文件
 
-#define MYSQL_LOG_MODULE "cgi"
+#define MYSQL_LOG_MODULE "database"
 #define MYSQL_LOG_PROC   "mysql"
 
 /* -------------------------------------------*/
@@ -75,7 +75,7 @@ MYSQL* msql_conn(char *user_name, char* passwd, char *db_name)
  *
  */
 /* -------------------------------------------*/
-void process_result_set(MYSQL *conn, MYSQL_RES *res_set)
+void process_result_test(MYSQL *conn, MYSQL_RES *res_set)
 {
     MYSQL_ROW row;
     uint i;
@@ -109,8 +109,28 @@ void process_result_set(MYSQL *conn, MYSQL_RES *res_set)
 }
 
 //处理数据库查询结果，结果保存在buf，只处理一条记录
-int process_result(MYSQL *conn, MYSQL_RES *res_set, char *buf)
+int process_result_one(MYSQL *conn, char *sql_cmd, char *buf)
 {
+    if(sql_cmd == NULL)
+    {
+        LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC,"sql_cmd is null\n");
+        return -1;
+    }
+
+    if (mysql_query(conn, sql_cmd) != 0)
+    {
+        LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC,"[-]%s error!", sql_cmd);
+        return -1;
+    }
+
+    MYSQL_RES *res_set;
+    res_set = mysql_store_result(conn);/*生成结果集*/
+    if (res_set == NULL)
+    {
+        LOG(MYSQL_LOG_MODULE, MYSQL_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
+        return -1;
+    }
+
     MYSQL_ROW row;
     uint i;
     ulong line = 0;

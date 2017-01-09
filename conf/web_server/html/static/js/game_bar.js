@@ -59,7 +59,7 @@ function loadGamesJson() {
 var alreadyLoadGameCnt=0;
 var perLoadCnt = 8;
 
-//fromId：已经加载的资源个数
+//fromId：已经加载的资源个数，加载资源的起点
 //perLoadCnt：每一次页面加载的个数，这里为8个
 //kind：类型，最新文件、共享文件
 function loadGamesBar(fromId, cnt, kind) {

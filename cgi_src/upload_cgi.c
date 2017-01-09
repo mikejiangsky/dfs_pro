@@ -552,26 +552,12 @@ int bk_fileinfo_to_redis(char *fileid, char *fdfs_file_url, char *filename, char
     //create time
     //通过mysql数据库获取文件的创建时间
     sprintf(sql_cmd, "select createtime from file_info where file_id=\"%s\"", fileid);
-    if (mysql_query(mysql_conn, sql_cmd) != 0)
+    if( -1 != process_result_one(mysql_conn, sql_cmd, create_time) )//deal_mysql.h
     {
-        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%s error!", sql_cmd);
-        return -1;
-    }
-    else
-    {
-        MYSQL_RES *res_set;
-        res_set = mysql_store_result(mysql_conn);/*生成结果集*/
-        if (res_set == NULL)
-        {
-            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
-            return -1;
-        }
-
-        process_result(mysql_conn, res_set, create_time);//deal_mysql.h
-
         rop_hash_set(redis_conn, FILEID_TIME_HASH, fileid, create_time);
         LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "[+]get  create_time succ = %s\n", create_time);
     }
+
 
     //FILEID_USER_HASH
     rop_hash_set(redis_conn, FILEID_USER_HASH, fileid, user);
@@ -598,32 +584,17 @@ int bk_fileinfo_to_redis(char *fileid, char *fdfs_file_url, char *filename, char
      {
         //通过数据库查询用户id
         sprintf(sql_cmd, "select u_id from user where u_name=\"%s\"", user);
-        if (mysql_query(mysql_conn, sql_cmd) != 0)
+        if(-1 == process_result_one(mysql_conn, sql_cmd, user_id) )//deal_mysql.h
         {
-            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%s error!", sql_cmd);
             return -1;
         }
-        else
-        {
-            MYSQL_RES *res_set;
-            res_set = mysql_store_result(mysql_conn);/*生成结果集*/
-            if (res_set == NULL)
-            {
-                LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
-                 return -1;
-            }
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
 
-            if(-1 == process_result(mysql_conn, res_set, user_id) )//deal_mysql.h
-            {
-                return -1;
-            }
-            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
+        //如果mysql有此用户id，要把此id放在缓冲中
+        //将用户ID 和 USERNAME关系表建立
+        rop_hash_set(redis_conn, USER_USERID_HASH, user, user_id);
+        LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"rop_hash_set[%s] %s %s!", USER_USERID_HASH, user, user_id);
 
-            //如果mysql有此用户id，要把此id放在缓冲中
-            //将用户ID 和 USERNAME关系表建立
-            rop_hash_set(redis_conn, USER_USERID_HASH, user, user_id);
-            LOG(UPLOAD_LOG_MODULE, UPLOAD_LOG_PROC,"rop_hash_set[%s] %s %s!", USER_USERID_HASH, user, user_id);
-        }
      }
 
 
@@ -695,7 +666,7 @@ int main()
                 goto END;
             }
 
-             //===============> 将该文件存入fastDFS中,并得到文件的file_id <============
+            //===============> 将该文件存入fastDFS中,并得到文件的file_id <============
             if (upload_to_dstorage(filename, fileid) < 0)
             {
                 goto END;

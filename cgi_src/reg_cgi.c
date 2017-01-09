@@ -75,24 +75,10 @@ void deal_redis(MYSQL *mysql_conn, char *user, char *user_id, char *redis_ip, ch
 
     //查询u_id 用户ID
     sprintf(sql_cmd, "select u_id from user where u_name=\"%s\"", user);
-    if (mysql_query(mysql_conn, sql_cmd) != 0)
-    {
-        LOG(REG_LOG_MODULE, REG_LOG_PROC,"[-]%s error!", sql_cmd);
-        return;
-    }
-    else
-    {
-        MYSQL_RES *res_set;
-        res_set = mysql_store_result(mysql_conn);/*生成结果集*/
-        if (res_set == NULL)
-        {
-            LOG(REG_LOG_MODULE, REG_LOG_PROC,"[-]%smysql_store_result error!", sql_cmd);
-             return;
-        }
 
-        process_result(mysql_conn, res_set, user_id);
-        LOG(REG_LOG_MODULE, REG_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
-    }
+    process_result_one(mysql_conn, sql_cmd, user_id);
+    LOG(REG_LOG_MODULE, REG_LOG_PROC, "[+]get u_id succ = %s\n", user_id);
+
 
      //入redis库
     redisContext *redis_conn = rop_connectdb_nopwd(redis_ip, redis_port);

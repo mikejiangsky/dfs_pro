@@ -9,6 +9,8 @@
 #define PWD_LEN             (256)	//密码长度
 #define TIME_STRING_LEN     (25)    //时间戳长度
 #define SUFFIX_LEN          (8)     //后缀名长度
+#define PIC_NAME_LEN        (10)    //图片资源名字长度
+#define PIC_URL_LEN         (256)   //图片资源url名字长度
 
 #define FDFS_CLIENT_CONF    "./conf/FastDFS/client/client.conf" //fastDFS client配置文件
 

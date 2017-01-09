@@ -45,9 +45,9 @@ MYSQL* msql_conn(char *user_name, char* passwd, char *db_name);
  *
  */
 /* -------------------------------------------*/
-void process_result_set(MYSQL *conn, MYSQL_RES *res_set);
+void process_result_test(MYSQL *conn, MYSQL_RES *res_set);
 
 //处理数据库查询结果，结果保存在buf，只处理一条记录
-int process_result(MYSQL *conn, MYSQL_RES *res_set, char *buf);
+int process_result_one(MYSQL *conn, char *sql_cmd, char *buf);
 
 #endif
