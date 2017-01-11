@@ -190,10 +190,17 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
         }
 
 
+        if (strcmp(cmd, "shareFile") == 0)
+        {
+            //查询共享文件列表
+            sprintf(sql_cmd, "select file_id from file_info where shared_status = 1");
+        }
+        else if(strcmp(cmd, "newFile") == 0)
+        {
+            //查询mysql同一个用户下，所有的file id
+            sprintf(sql_cmd, "select file_id from file_info where user=\"%s\"", username);
+        }
 
-        //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "redis range %s error", FILE_PUBLIC_LIST);
-        //查询mysql同一个用户下，所有的file id
-        sprintf(sql_cmd, "select file_id from file_info where user=\"%s\"", username);
 
         if (mysql_query(mysql_conn, sql_cmd) != 0)
         {
@@ -236,7 +243,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
         retn = rop_range_list(redis_conn, fileid_list, fromId, endId, fileid_list_values, &value_num);
         if (retn < 0)
         {
-            LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "redis range %s error", FILE_PUBLIC_LIST);
+            LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "redis range %s error", fileid_list);
             goto END;
         }
 
@@ -590,6 +597,12 @@ int main()
         }
         else if (strcmp(cmd, "shareFile") == 0)
         {//请求共享文件列表
+            query_parse_key_value(query, "fromId", fromId, NULL);
+            query_parse_key_value(query, "count", count, NULL);
+            query_parse_key_value(query, "user", user, NULL);
+            LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "=== fromId:%s, count:%s, cmd:%s, user:%s", fromId, count, cmd, user);
+
+             print_file_list_json(atoi(fromId), atoi(count), cmd, user);
 
         }
         else if (strcmp(cmd, "increase") == 0)
