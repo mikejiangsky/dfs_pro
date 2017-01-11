@@ -61,7 +61,7 @@ var perLoadCnt = 8;
 
 //fromId：已经加载的资源个数，加载资源的起点
 //perLoadCnt：每一次页面加载的个数，这里为8个
-//kind：类型，最新文件、共享文件
+//kind：类型，最新文件newFile、共享文件列表shareFile
 function loadGamesBar(fromId, cnt, kind) {
 	
 	//Request URL:http://192.168.31.109/data?cmd=newFile&fromId=0&count=8&user=mike
@@ -315,7 +315,7 @@ function pullUpAction () {
         if (menu_game_new_selected == 1) {
             loadGamesBar(alreadyLoadGameCnt,perLoadCnt,'newFile'); //最新文件
         } else if (menu_game_hot_selected == 1) {
-            loadGamesBar(alreadyLoadGameCnt,perLoadCnt,'hotGame');	//共享文件
+            loadGamesBar(alreadyLoadGameCnt,perLoadCnt,'hotGame');	//文件上传
         } else if (menu_kind_selected == 1 || menu_kind_selected_type != '0') {
 			//最近文件，共享文件，处理函数
 			//loadGamesBarBykind()和loadGamesBar()区别，loadGamesBar()中的alreadyLoadGameCnt每次都是0
@@ -427,7 +427,7 @@ function selected_action(kind) {
             hideMenu();
             return;
         }
-    } else if( kind == 'shareFile') { //共享文件
+    } else if( kind == 'shareFile') { //共享文件列表
         if (menu_kind_selected == 0) {
             menu_kind_selected = 1;
             menu_game_new_selected=0;
@@ -640,7 +640,7 @@ function bindEvent() {
         selected_action('kind');
     });
     */
-    Zepto("#menu_kind").on(CLICKEVENT, function(e) {//点击"共享文件"
+    Zepto("#menu_kind").on(CLICKEVENT, function(e) {//点击"共享文件列表"
         selected_action('shareFile');
     });
 

@@ -20,19 +20,23 @@ kill -9 `ps aux | grep "redis-server" | grep -v grep | awk '{print $2}'`
 #启动redis服务器
 redis-server ./conf/redis/redis.conf
 
+#拷贝nginx配置文件到指定目录
+sudo cp ./conf/web_server/nginx.conf /usr/local/nginx/conf
+sudo cp ./conf/web_server/html/*  /usr/local/nginx/html -R
+
 
 #启动nginx服务器
-#sudo /usr/local/nginx/sbin/nginx -s stop
-#sudo /usr/local/nginx/sbin/nginx
-if [ ! -f "/usr/local/nginx/logs/nginx.pid" ]; then
+sudo /usr/local/nginx/sbin/nginx -s stop
+sudo /usr/local/nginx/sbin/nginx
+#if [ ! -f "/usr/local/nginx/logs/nginx.pid" ]; then
     #no nginx.pid  need start
-    sudo /usr/local/nginx/sbin/nginx
-    echo "nginx start!"
-else
+#    sudo /usr/local/nginx/sbin/nginx
+#    echo "nginx start!"
+#else
     #has nginx.pid need reload
-    sudo /usr/local/nginx/sbin/nginx -s reload
-    echo "nginx reload!"
-fi
+#    sudo /usr/local/nginx/sbin/nginx -s reload
+#    echo "nginx reload!"
+#fi
 
 #启动本地tracker
 sudo /usr/bin/fdfs_trackerd ./conf/FastDFS/tracker/tracker.conf restart

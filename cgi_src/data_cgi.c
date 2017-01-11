@@ -99,7 +99,6 @@ int get_hash_value(redisContext *redis_conn, char *key, char *field, char *value
 /* -------------------------------------------*/
 void print_file_list_json(int fromId, int count, char *cmd, char *username)
 {
-    LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "1111111111 strat = %d, count = %d\n", fromId, count);
 
     int i = 0;
 
@@ -149,7 +148,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
     //设置数据库编码
     mysql_query(mysql_conn, "set names utf8");
 
-    LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "fromId:%d, count:%d",fromId, count);
+    //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "fromId:%d, count:%d",fromId, count);
     fileid_list_values = (RVALUES)malloc(count*VALUES_ID_SIZE);
 
     //数据库数据查询规则
@@ -229,7 +228,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
                 if(row[i] != NULL)
                 {
                     rop_list_push(redis_conn, fileid_list, row[i]);
-                    LOG(DATA_LOG_MODULE, DATA_LOG_PROC,"rop_list_push[%s] %s!", fileid_list, row[i]);
+                    //LOG(DATA_LOG_MODULE, DATA_LOG_PROC,"rop_list_push[%s] %s!", fileid_list, row[i]);
                 }
             }
         }
@@ -264,7 +263,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
         {
             goto END;
         }
-        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "filename=%s\n", filename);
+        //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "filename=%s\n", filename);
         cJSON_AddStringToObject(item, "title_m", filename);
 
         //title_s(username)， 用户名字
@@ -282,7 +281,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
             goto END;
         }
         cJSON_AddStringToObject(item, "descrip", create_time);
-        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "create_time=%s\n", create_time);
+        //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "create_time=%s\n", create_time);
 
         //picurl_m 图片后缀
         //读取web_server服务器的ip和端口
@@ -312,7 +311,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
         }
 
         cJSON_AddStringToObject(item, "url", file_url);
-        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "file_url=%s\n", file_url);
+        //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "file_url=%s\n", file_url);
 
         score = rop_zset_get_score(redis_conn, FILE_HOT_ZSET, fileid_list_values[i]);
         //pv, 文件下载量，由于默认值从1开始，所以，需要减去1
@@ -335,7 +334,7 @@ void print_file_list_json(int fromId, int count, char *cmd, char *username)
             }
         }
         cJSON_AddNumberToObject(item, "pv", score-1);
-        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "pv=%d\n", score-1);
+        //LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "pv=%d\n", score-1);
 
 
         //hot (文件共享状态)
@@ -375,6 +374,174 @@ END:
     }
 }
 
+//设置此文件为已经分享
+int move_file_to_public_list(char *file_id)
+{
+    int retn = 0;
+    char sql_cmd[SQL_MAX_LEN] = {0};
+    redisContext *redis_conn = NULL;
+
+    redis_conn = rop_connectdb_nopwd(redis_ip, redis_port);
+    if (redis_conn == NULL)
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "redis connected error");
+        retn = -1;
+        goto END;
+    }
+
+    MYSQL *mysql_conn = NULL; //数据库连接句柄
+
+    //连接 mysql 数据库
+    mysql_conn = msql_conn(mysql_user, mysql_pwd, mysql_db);
+    if (mysql_conn == NULL)
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "msql_conn connect err\n");
+        retn = -1;
+        goto END;
+    }
+
+    //设置数据库编码
+    mysql_query(mysql_conn, "set names utf8");
+
+    // 1 将此file id 添加到 publish list 中
+    rop_list_push(redis_conn, FILE_PUBLIC_LIST, file_id);
+
+
+    // 2 文件引用计数加1
+    char count[10];
+
+    //获取文件引用计数count
+    sprintf(sql_cmd, "select count from file_info where file_id='%s'", file_id);
+    if( -1 == get_hash_value(redis_conn, FILE_REFERENCE_COUNT_HASH, file_id, count, mysql_conn, sql_cmd) )
+    {
+        retn = -1;
+        goto END;
+    }
+    LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "count = %s\n", count);
+
+    //更新mysql数据
+    sprintf(sql_cmd, "update file_info set count = %d where file_id='%s'", atoi(count)+1, file_id);
+
+    if (mysql_query(mysql_conn, sql_cmd) != 0) //执行sql语句
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "执行sql语句失败\n");
+        retn = -1;
+        goto END;
+    }
+
+    //更新hash表
+    rop_hincrement_one_field(redis_conn,FILE_REFERENCE_COUNT_HASH , file_id, 1);
+
+    // 3 文件分享值设置为 分享状态 1
+
+     //更新mysql数据
+    sprintf(sql_cmd, "update file_info set shared_status = %d where file_id='%s'", 1, file_id);
+
+    if (mysql_query(mysql_conn, sql_cmd) != 0) //执行sql语句
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "执行sql语句失败\n");
+        retn = -1;
+        goto END;
+    }
+
+    //更新hash表
+    rop_hash_set(redis_conn, FILEID_SHARED_STATUS_HASH, file_id, "1");
+
+
+END:
+    if(redis_conn != NULL)
+    {
+        rop_disconnect(redis_conn);
+    }
+
+    if (mysql_conn != NULL)
+    {
+        mysql_close(mysql_conn); //断开数据库连接
+    }
+
+    return retn;
+}
+
+//某个文件下载标志位加1
+int increase_file_pv(char *file_id)
+{
+    int retn = 0;
+    char sql_cmd[SQL_MAX_LEN] = {0};
+    redisContext *redis_conn = NULL;
+
+    redis_conn = rop_connectdb_nopwd(redis_ip, redis_port);
+    if (redis_conn == NULL)
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "redis connected error");
+        retn = -1;
+        goto END;
+    }
+
+    MYSQL *mysql_conn = NULL; //数据库连接句柄
+
+    //连接 mysql 数据库
+    mysql_conn = msql_conn(mysql_user, mysql_pwd, mysql_db);
+    if (mysql_conn == NULL)
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "msql_conn connect err\n");
+        retn = -1;
+        goto END;
+    }
+
+    //设置数据库编码
+    mysql_query(mysql_conn, "set names utf8");
+
+
+
+
+    int score = rop_zset_get_score(redis_conn, FILE_HOT_ZSET, file_id);
+    //pv, 如果缓冲没有数据，需要从mysql中读取
+    if(-1 ==  score)
+    {
+        sprintf(sql_cmd, "select pv from file_info where file_id=\"%s\"", file_id);
+        char tmp[20];
+        if( -1 == process_result_one(mysql_conn, sql_cmd, tmp) )//deal_mysql.h
+        {
+            retn = -1;
+            goto END;
+        }
+
+        int j = 0;
+        score = atoi(tmp);
+
+        for(j = 0; j < score; j++)
+        {
+            //将文件插入到FILE_HOT_ZSET中
+            rop_zset_increment(redis_conn, FILE_HOT_ZSET, file_id);
+        }
+    }
+
+    //更新数据
+    sprintf(sql_cmd, "update file_info set pv = %d where file_id='%s'", score+1, file_id);
+    if (mysql_query(mysql_conn, sql_cmd) != 0) //执行sql语句
+    {
+        LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "执行sql语句失败\n");
+        retn = -1;
+        goto END;
+    }
+    rop_zset_increment(redis_conn, FILE_HOT_ZSET, file_id);
+    LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "pv = %d\n", score+1);
+
+
+END:
+    if(redis_conn != NULL)
+    {
+        rop_disconnect(redis_conn);
+    }
+
+    if (mysql_conn != NULL)
+    {
+        mysql_close(mysql_conn); //断开数据库连接
+    }
+
+    return retn;
+}
+
 int main()
 {
     char fromId[5]; //fromId：已经加载的资源个数
@@ -412,7 +579,7 @@ int main()
 
 
         if (strcmp(cmd, "newFile") == 0)
-        {//请求私有文件列表命令， 最新文件
+        {   //请求私有文件列表命令， 最新文件
             query_parse_key_value(query, "fromId", fromId, NULL);
             query_parse_key_value(query, "count", count, NULL);
             query_parse_key_value(query, "user", user, NULL);
@@ -428,9 +595,25 @@ int main()
         else if (strcmp(cmd, "increase") == 0)
         {//文件被点击下载
 
+            //得到点击的fileId
+            query_parse_key_value(query, "fileId", fileId, NULL);
+            LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "=== fileId:%s,cmd:%s", fileId,  cmd);
+
+            //str_replace(fileId, "%2F", "/");
+
+            //下载标志位加1
+            increase_file_pv(fileId);
+
         }
         else if (strcmp(cmd, "shared") == 0)
         {//文件被点击分享
+            //得到点击的fileId
+            query_parse_key_value(query, "fileId", fileId, NULL);
+            LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "=== fileId:%s,cmd:%s, user:%s", fileId,  cmd, user);
+            //str_replace(fileId, "%2F", "/");
+
+            //设置此文件为已经分享
+            move_file_to_public_list(fileId);
 
         }
 

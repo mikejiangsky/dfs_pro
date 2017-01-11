@@ -50,4 +50,6 @@ int query_parse_key_value(const char *query, const char *key, char *value, int *
 //通过文件名file_name， 得到文件后缀字符串, 保存在suffix 如果非法文件后缀,返回"null"
 int get_file_suffix(const char *file_name, char *suffix);
 
+void str_replace(char* strSrc, char* strFind, char* strReplace);
+
 #endif

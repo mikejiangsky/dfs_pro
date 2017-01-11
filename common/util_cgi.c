@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "make_log.h"
 
 #define UTIL_LOG_MODULE     "cgi"
@@ -203,3 +204,53 @@ int get_file_suffix(const char *file_name, char *suffix)
 
     return 0;
 }
+
+void str_replace(char* strSrc, char* strFind, char* strReplace)
+{
+    while (*strSrc != '\0')
+    {
+        if (*strSrc == *strFind)
+        {
+            if (strncmp(strSrc, strFind, strlen(strFind)) == 0)
+            {
+                int i = 0;
+                char *q = NULL;
+                char *p = NULL;
+                char *repl = NULL;
+                int lastLen = 0;
+
+                i = strlen(strFind);
+                q = strSrc+i;
+                p = q;//p、q均指向剩余字符串的首地址
+                repl = strReplace;
+
+                while (*q++ != '\0')
+                    lastLen++;
+                char* temp = (char *)malloc(lastLen+1); //临时开辟一段内存保存剩下的字符串,防止内存覆盖
+                int k = 0;
+                for (k = 0; k < lastLen; k++)
+                {
+                    *(temp+k) = *(p+k);
+                }
+                *(temp+lastLen) = '\0';
+                while (*repl != '\0')
+                {
+                    *strSrc++ = *repl++;
+                }
+                p = strSrc;
+                char* pTemp = temp;//回收动态开辟内存
+                while (*pTemp != '\0')
+                {
+                    *p++ = *pTemp++;
+                }
+                free(temp);
+                *p = '\0';
+            }
+            else
+                strSrc++;
+        }
+        else
+            strSrc++;
+    }
+}
+
