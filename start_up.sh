@@ -1,3 +1,6 @@
+#拷贝配置文件路径
+./cfg.sh
+
 # 杀死 已经启动的后台CGI程序
 kill -9 `ps aux | grep "cgi_bin/upload.cgi" | grep -v grep | awk '{print $2}'`
 kill -9 `ps aux | grep "cgi_bin/login.cgi" | grep -v grep | awk '{print $2}'`
@@ -12,7 +15,7 @@ spawn-fcgi -a 127.0.0.1 -p 8005 -f ./cgi_bin/reg.cgi
 spawn-fcgi -a 127.0.0.1 -p 8006 -f ./cgi_bin/data.cgi
 
 #启动MySQL服务器
-sudo service mysql restart
+service mysql restart
 
 # 杀死 已经启动的后台redis服务器
 kill -9 `ps aux | grep "redis-server" | grep -v grep | awk '{print $2}'`
@@ -20,26 +23,22 @@ kill -9 `ps aux | grep "redis-server" | grep -v grep | awk '{print $2}'`
 #启动redis服务器
 redis-server ./conf/redis/redis.conf
 
-#拷贝nginx配置文件到指定目录
-sudo cp ./conf/web_server/nginx.conf /usr/local/nginx/conf
-sudo cp ./conf/web_server/html/*  /usr/local/nginx/html -R
-
 
 #启动nginx服务器
-sudo /usr/local/nginx/sbin/nginx -s stop
-sudo /usr/local/nginx/sbin/nginx
+/usr/local/nginx/sbin/nginx -s stop
+/usr/local/nginx/sbin/nginx
 #if [ ! -f "/usr/local/nginx/logs/nginx.pid" ]; then
-    #no nginx.pid  need start
+#    #no nginx.pid  need start
 #    sudo /usr/local/nginx/sbin/nginx
 #    echo "nginx start!"
 #else
-    #has nginx.pid need reload
+#    #has nginx.pid need reload
 #    sudo /usr/local/nginx/sbin/nginx -s reload
 #    echo "nginx reload!"
 #fi
 
 #启动本地tracker
-sudo /usr/bin/fdfs_trackerd ./conf/FastDFS/tracker/tracker.conf restart
+/usr/bin/fdfs_trackerd ./conf/FastDFS/tracker/tracker.conf restart
 
 #启动本地storage
-sudo /usr/bin/fdfs_storaged ./conf/FastDFS/storage/storage.conf restart
+/usr/bin/fdfs_storaged ./conf/FastDFS/storage/storage.conf restart

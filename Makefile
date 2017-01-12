@@ -1,10 +1,10 @@
 CC=gcc
-CPPFLAGS= -I./include -I/usr/local/include/hiredis -I/usr/include/mysql/
+CPPFLAGS= -I./include -I/usr/local/include/hiredis -I/usr/include/mysql/ -I/usr/include/fastcommon/
 CFLAGS=-Wall 
 #CFLAGS=-w
-LIBS = -lfcgi -lm -lmysqlclient -lhiredis
+LIBS = -lfcgi -lm -lmysqlclient -lhiredis -lfdfsclient
 
-#src
+#src path
 TEST_PATH=./test
 CGI_BIN_PATH=./cgi_bin
 CGI_SRC_PATH=./cgi_src
@@ -42,20 +42,47 @@ $(test_redis):$(TEST_PATH)/test_redis.o $(COMMON_PATH)/make_log.o $(COMMON_PATH)
 	$(CC) $^ -o $@ $(LIBS)
 
 #====================================cgi程序=======================================
-#upload.cgi程序
-$(upload.cgi):$(CGI_SRC_PATH)/upload_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/redis_op.o $(COMMON_PATH)/cfg.o $(COMMON_PATH)/url_code.o
+#上传文件upload.cgi程序
+$(upload.cgi):	$(CGI_SRC_PATH)/upload_cgi.o \
+				$(COMMON_PATH)/make_log.o  \
+				$(COMMON_PATH)/util_cgi.o \
+				$(COMMON_PATH)/cJSON.o \
+				$(COMMON_PATH)/deal_mysql.o \
+				$(COMMON_PATH)/redis_op.o \
+				$(COMMON_PATH)/cfg.o \
+				$(COMMON_PATH)/url_code.o
 	$(CC) $^ -o $@ $(LIBS)
 	
-#login.cgi程序
-$(login.cgi):$(CGI_SRC_PATH)/login_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/cfg.o $(COMMON_PATH)/url_code.o
+#登陆login.cgi程序
+$(login.cgi):	$(CGI_SRC_PATH)/login_cgi.o \
+				$(COMMON_PATH)/make_log.o  \
+				$(COMMON_PATH)/util_cgi.o \
+				$(COMMON_PATH)/cJSON.o \
+				$(COMMON_PATH)/deal_mysql.o \
+				$(COMMON_PATH)/cfg.o \
+				$(COMMON_PATH)/url_code.o
 	$(CC) $^ -o $@ $(LIBS)
 	
-#reg.cgi程序
-$(reg.cgi):$(CGI_SRC_PATH)/reg_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/redis_op.o  $(COMMON_PATH)/cfg.o $(COMMON_PATH)/url_code.o
+#注册reg.cgi程序
+$(reg.cgi):	$(CGI_SRC_PATH)/reg_cgi.o \
+			$(COMMON_PATH)/make_log.o  \
+			$(COMMON_PATH)/util_cgi.o \
+			$(COMMON_PATH)/cJSON.o \
+			$(COMMON_PATH)/deal_mysql.o \
+			$(COMMON_PATH)/redis_op.o  \
+			$(COMMON_PATH)/cfg.o \
+			$(COMMON_PATH)/url_code.o
 	$(CC) $^ -o $@ $(LIBS)
 	
 #首页展示cgi程序
-$(data.cgi):$(CGI_SRC_PATH)/data_cgi.o $(COMMON_PATH)/make_log.o  $(COMMON_PATH)/util_cgi.o $(COMMON_PATH)/cJSON.o $(COMMON_PATH)/deal_mysql.o $(COMMON_PATH)/redis_op.o  $(COMMON_PATH)/cfg.o $(COMMON_PATH)/url_code.o
+$(data.cgi):	$(CGI_SRC_PATH)/data_cgi.o \
+				$(COMMON_PATH)/make_log.o  \
+				$(COMMON_PATH)/util_cgi.o \
+				$(COMMON_PATH)/cJSON.o \
+				$(COMMON_PATH)/deal_mysql.o \
+				$(COMMON_PATH)/redis_op.o  \
+				$(COMMON_PATH)/cfg.o \
+				$(COMMON_PATH)/url_code.o
 	$(CC) $^ -o $@ $(LIBS)
 
 

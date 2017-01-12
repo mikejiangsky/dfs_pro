@@ -612,8 +612,6 @@ int main()
             query_parse_key_value(query, "fileId", fileId, NULL);
             LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "=== fileId:%s,cmd:%s", fileId,  cmd);
 
-            //str_replace(fileId, "%2F", "/");
-
             //下载标志位加1
             increase_file_pv(fileId);
 
@@ -623,7 +621,6 @@ int main()
             //得到点击的fileId
             query_parse_key_value(query, "fileId", fileId, NULL);
             LOG(DATA_LOG_MODULE, DATA_LOG_PROC, "=== fileId:%s,cmd:%s, user:%s", fileId,  cmd, user);
-            //str_replace(fileId, "%2F", "/");
 
             //设置此文件为已经分享
             move_file_to_public_list(fileId);

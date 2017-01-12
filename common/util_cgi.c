@@ -205,6 +205,7 @@ int get_file_suffix(const char *file_name, char *suffix)
     return 0;
 }
 
+//字符串strSrc中的字串strFind，替换为strReplace
 void str_replace(char* strSrc, char* strFind, char* strReplace)
 {
     while (*strSrc != '\0')
